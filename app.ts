@@ -14,15 +14,15 @@ class App {
 
   private initializeRoutes(): void {
     this.app.post("/validateCustomer", this.validateCustomer.bind(this));
-    this.app.post("/categories-by-client", this.getBillerCategories.bind(this));
+    this.app.get("/categories-by-client", this.getBillerCategories.bind(this));
     this.app.get("/getcategoryBillers", this.getCategoryBillers.bind(this));
-    this.app.post("/items", this.getPaymentItems.bind(this));
+    this.app.get("/items", this.getPaymentItems.bind(this));
     this.app.post("/payment", this.payment.bind(this));
-    this.app.post(
+    this.app.get(
       "/transStatus/:terminalId/:requestReference",
       this.transStatus.bind(this)
     );
-    this.app.post("/accountBalance", this.accountBalance.bind(this));
+    this.app.get("/accountBalance", this.accountBalance.bind(this));
     this.app.get("/keyPair", this.generateRSAKeyPair.bind(this));
     this.app.post("/clientRegistration", this.clientRegistration.bind(this));
     this.app.post("/doKeyExchange", this.doKeyExchange.bind(this));
@@ -32,10 +32,10 @@ class App {
 
   async util(req: Request, res: Response) {
     try {
-      var clientSecret ="XexmmksCp8fMwFEaetPq9UyFjF24PHtFs/wGiZBP14LNC5eIoiIOvrMLz5wxIU9SF5kSBu+1KCvxflDwyduOsFcdDABQaVte6qmJW3baL2VaHRPnNIArkPfxqei1phU4iZbvB3qGlI7FqFiXNInimJXssXgzaLl7T7flfcPaofwklf61SMbKSuWSlCqyDPHEKfrPrA/sRcDUrLJ1tN4dj1Kob8X0LcRUSwlGTDwwYMpyZa26GAR6QMEWwWR3cdK8reS8On64scskD+/+fIKn/HCMK/x+VMhfAfrRB14XhhmZfZz9xH10Bz+Q5Bnv4Seh9np6Wi1bRuV8app9m+8ong==";
+      var clientSecret ="zpRc8p/dlBKkizlvenLUh/evRn+2lW1FfCyRGx/SOAUMcxrkyzsNibQgAqv2seuGmObIE1e8IBzpiN+urx9b4mHv7Dm4GSjYNmLfMUfJom2q4ehDg7K6u/2Pm2hAu6yW3iH/UmQwbIElx4W06moXWugWQX0gvxXmv4UwCAwxYZBtTIIv8WQaP9j9PEQPHFmSqFXy2qJwij+ytpp5eHJ69WQs2Q0Vj0F3CkbYd1fvrNRlTCgXqJy1v9dw5lOpyhYL7m76P1v8Xnz9C1CkCPmlQ0XXNa0wt85kbpmg66kTtcOpLNP/qZHjHTJy1I+BpdCEULV203KqjiirSmNlhJiCxQ==";
 
       const responseData = this.iswInstance.decryptWithPrivateKey(clientSecret);
-      console.log("certificate", responseData);
+      console.log("Response::", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -52,10 +52,11 @@ class App {
     }
   }
 
+
   async doKeyExchange(req: Request, res: Response) {
     try {
-      const responseData = this.iswInstance.doKeyExchange();
-      console.log("certificate", responseData);
+      const responseData = await this.iswInstance.doKeyExchange();
+      console.log("Response:: ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -65,9 +66,10 @@ class App {
   async generateRSAKeyPair(req: Request, res: Response) {
     try {
       const responseData = this.iswInstance.generateRSAKeyPair();
-      console.log("certificate", responseData);
+      console.log("Key Pair ", responseData);
       res.send(responseData);
-    } catch (error) {
+    } 
+    catch (error) {
       res.status(500).send(error);
     }
   }
@@ -75,6 +77,7 @@ class App {
   async accountBalance(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.accountBalance(req.body);
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -84,6 +87,7 @@ class App {
   async clientRegistration(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.clientRegistration(req.body);
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -92,9 +96,10 @@ class App {
 
   async transStatus(req: Request, res: Response) {
     try {
-      const responseData = await this.iswInstance.transactionInformation(
+      const responseData = await this.iswInstance.transactionInquiry(
         req.body
       );
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -104,6 +109,7 @@ class App {
   async validateCustomer(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.validateCustomer(req.body);
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -113,6 +119,7 @@ class App {
   async getBillerCategories(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.Getcategories();
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -122,6 +129,7 @@ class App {
   async getCategoryBillers(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.Getcategories();
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -131,6 +139,7 @@ class App {
   async getPaymentItems(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.GetPaymentItems(req.body);
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);
@@ -140,6 +149,7 @@ class App {
   async payment(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.makePayment(req.body);
+      console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
       res.status(500).send(error);

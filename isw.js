@@ -56,6 +56,7 @@ class ISW {
         this.serialId = process.env.serialId || "";
         this.initializeKeys();
     }
+    //Load saved key values
     initializeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -67,6 +68,17 @@ class ISW {
             catch (error) {
                 console.error("Error initializing keys:", error);
                 // handle error, maybe set some defaults or throw
+            }
+        });
+    }
+    writeToFile(filePath, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield writeFile(filePath, data);
+                return `Data successfully written to ${filePath}`;
+            }
+            catch (error) {
+                throw new Error(`Error writing to file: ${error}`);
             }
         });
     }
@@ -168,118 +180,7 @@ class ISW {
             }
         });
     }
-    Getcategories() {
-        return __awaiter(this, void 0, void 0, function* () {
-            console.log("cat==>", this.terminalId);
-            const url = `/qt-api/Biller/categories-by-client?clientterminalId=${this.terminalId}&terminalId=${this.terminalId}`;
-            const response = yield this.get(url);
-            console.log("response==>", response);
-            return response;
-        });
-    }
-    GetBillerCategories(categoryId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = `/qt-api/Biller/biller-by-category/${categoryId}`;
-            const response = yield this.get(url);
-            console.log("response==>", response);
-            return response;
-        });
-    }
-    GetPaymentItems(billerId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = `/qt-api/Biller/items/biller-id/${billerId}`;
-            const response = yield this.get(url);
-            console.log("response==>", response);
-            return response;
-        });
-    }
-    accountBalance(requestReference) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = `/api/v1/phoenix/sente/accountBalance?terminalId=${this.terminalId}&requestReference=${requestReference}`;
-            const response = yield this.get(url);
-            console.log("response==>", response);
-            return response;
-        });
-    }
-    transactionInformation(requestReference) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const url = `/api/v1/phoenix/sente/transaction?terminalId=${this.terminalId}&requestReference=${requestReference}`;
-            const response = yield this.get(url);
-            console.log("response==>", response);
-            return response;
-        });
-    }
-    makePayment(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const paymentBody = {
-                terminalId: this.terminalId,
-                requestReference: data.requestReference,
-                amount: data.amount,
-                customerId: data.customerId,
-                phoneNumber: data.phoneNumber,
-                paymentCode: data.paymentCode,
-                customerName: data.customerName,
-                sourceOfFunds: data.sourceOfFunds,
-                narration: data.narration,
-                depositorName: data.depositorName,
-                location: data.location,
-                alternateCustomerId: data.alternateCustomerId,
-                transactionCode: data.transactionCode,
-                customerToken: data.customerToken,
-                additionalData: data.additionalData,
-                collectionsAccountNumber: data.collectionsAccountNumber,
-                pin: data.pin,
-                otp: data.otp,
-                currencyCode: data.currencyCode,
-            };
-            const url = "/api/v1/phoenix/sente/xpayment";
-            try {
-                const response = yield this.post(url, paymentBody); // Ensure you have a post method implemented
-                if (response.responseCode === "90000") {
-                    return response;
-                }
-                else {
-                    throw response;
-                }
-            }
-            catch (error) {
-                console.error(error);
-                throw error;
-            }
-        });
-    }
-    validateCustomer(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-                const url = "/api/v1/phoenix/sente/customerValidation";
-                const customerValidationData = {
-                    terminalId: this.terminalId,
-                    requestReference: data.requestReference,
-                    paymentCode: data.paymentCode,
-                    customerId: data.customerId,
-                    currencyCode: data.currencyCode,
-                    amount: data.amount,
-                    alternateCustomerId: data.alternateCustomerId,
-                    customerToken: data.customerToken,
-                    transactionCode: data.transactionCode,
-                    additionalData: data.additionalData,
-                };
-                try {
-                    const response = yield this.post(url, customerValidationData); // Ensure you have a post method implemented
-                    if (response.responseCode === "90000") {
-                        resolve(response);
-                    }
-                    else {
-                        reject(response);
-                    }
-                }
-                catch (error) {
-                    console.error(error);
-                    reject(error);
-                }
-            }));
-        });
-    }
+    //Genrtae Key Pair
     generateRSAKeyPair() {
         const { publicKey, privateKey } = crypto_1.default.generateKeyPairSync("rsa", {
             modulusLength: 2048,
@@ -316,12 +217,6 @@ class ISW {
         const sharedSecret = ecdh.computeSecret(publicKey, "hex", "hex");
         return sharedSecret;
     }
-    encryptWithAES(data, key, iv) {
-        const cipher = crypto_1.default.createCipheriv("aes-256-cbc", Buffer.from(key, "hex"), Buffer.from(iv, "hex"));
-        let encrypted = cipher.update(data, "utf8", "hex");
-        encrypted += cipher.final("hex");
-        return encrypted;
-    }
     generateAuthorizationHeader(clientId) {
         const encodedClientId = Buffer.from(clientId).toString("base64");
         return `InterswitchAuth ${encodedClientId}`;
@@ -329,56 +224,47 @@ class ISW {
     generateSignatureHeader(httpMethod, resourceUrl, timestamp, nonce, clientId, clientSecretKey, additionalParameters = null) {
         const encodedURI = encodeURIComponent(resourceUrl);
         let baseString = httpMethod +
-            "&" +
-            encodedURI +
-            "&" +
-            timestamp +
-            "&" +
-            nonce +
-            "&" +
-            clientId +
-            "&" +
-            clientSecretKey;
+            "&" + encodedURI +
+            "&" + timestamp +
+            "&" + nonce +
+            "&" + clientId +
+            "&" + clientSecretKey;
         if (additionalParameters) {
-            baseString +=
-                "&" +
-                    additionalParameters.amount +
-                    "&" +
-                    additionalParameters.terminalId +
-                    "&" +
-                    additionalParameters.requestReference +
-                    "&" +
-                    additionalParameters.customerId +
-                    "&" +
-                    additionalParameters.paymentcode;
+            baseString += "&" + additionalParameters.amount +
+                "&" + additionalParameters.terminalId +
+                "&" + additionalParameters.requestReference +
+                "&" + additionalParameters.customerId +
+                "&" + additionalParameters.paymentcode;
         }
         try {
             return this.signMessage(baseString);
-            // const sign = crypto.createSign("SHA256");
-            // sign.update(baseString);
-            // const signature = sign.sign({ key: this.privateKey }, "base64");
-            // return signature;
         }
         catch (error) {
             console.log("An error occurred while creating the signature:", error);
             return "";
         }
     }
+    //encrypt password using sessionKey
     encryptPassword(password, sessionKey) {
         const sessionKeyBuffer = Buffer.from(sessionKey, "hex");
         const hash = crypto_1.default.createHash("sha512");
-        hash.update(password);
+        hash.update(password, 'utf-8');
         const hashedPasswordHex = hash.digest("hex");
         const base64EncodedHash = Buffer.from(hashedPasswordHex, "hex").toString("base64");
-        // const base64EncodedHash = hashedPasswordHex;
         console.log("hashedPasswordHex", hashedPasswordHex);
         console.log("base64EncodedHash", base64EncodedHash);
         const iv = Buffer.alloc(16, 0);
         const cipher = crypto_1.default.createCipheriv("aes-256-cbc", sessionKeyBuffer, iv);
+        cipher.setAutoPadding(true);
         let encrypted = cipher.update(base64EncodedHash, "utf8", "base64");
         encrypted += cipher.final("base64");
-        return encrypted;
+        let combinedBuffer = [];
+        combinedBuffer.push(iv);
+        combinedBuffer.push(Buffer.from(encrypted, 'base64'));
+        let finalEncr = Buffer.concat(combinedBuffer);
+        return finalEncr.toString('base64');
     }
+    //decrypt authToken using sessionKey
     getAuthToken(authToken, sessionKey) {
         const iv = Buffer.alloc(16, 0);
         const cipher = crypto_1.default.createCipheriv("aes-256-cbc", Buffer.from(sessionKey, "hex"), iv);
@@ -387,6 +273,34 @@ class ISW {
         const authTokenEncrypted = encrypted;
         return authTokenEncrypted;
     }
+    //decrypt value using privateKey
+    decryptWithPrivateKey(encryptedData) {
+        const buffer = Buffer.from(encryptedData, "base64");
+        const decrypted = crypto_1.default.privateDecrypt({
+            key: this.privateKey,
+            padding: crypto_1.default.constants.RSA_PKCS1_OAEP_PADDING,
+            oaepHash: "sha256", // Specify the hash function for OAEP
+        }, buffer);
+        return decrypted.toString();
+    }
+    //use  serversessionPublic  to generate ECDH sessionKey
+    doECDH(serverPublicKeyBase64, ecdhPrivate) {
+        const ec = new elliptic_1.ec("p256");
+        const yourKeyPair = ec.keyFromPrivate(ecdhPrivate, "hex");
+        const serverPublicKeyHex = Buffer.from(serverPublicKeyBase64, "base64").toString("hex");
+        const sessionKey = yourKeyPair.derive(ec.keyFromPublic(serverPublicKeyHex, "hex").getPublic());
+        return sessionKey.toString("hex");
+    }
+    //Sign data using private key
+    signMessage(message) {
+        console.log("doKeyExchange conct String ==>", message);
+        console.log("newString", message);
+        const sign = crypto_1.default.createSign("rsa-sha256"); //Changed from SHA256
+        sign.update(message);
+        const signature = sign.sign(this.privateKey, "base64");
+        return signature;
+    }
+    //INITIATE CLIENT REGISTRATION
     clientRegistration(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const serialId = this.serialId;
@@ -434,9 +348,12 @@ class ISW {
                         const newAuthToken = responseData.authToken;
                         const newDecryptedAuthToken = this.decryptWithPrivateKey(newAuthToken);
                         const decryptedClientSecret = this.decryptWithPrivateKey(clientSecret);
+                        console.log('sessionKey', sessionKey);
                         this.writeToFile("authToken.txt", newDecryptedAuthToken);
                         this.writeToFile("secrete.txt", decryptedClientSecret);
                         this.writeToFile("session.txt", sessionKey);
+                        //return decrypted secret or simply restart app to pickup new one from file
+                        completeRegResponse.DECRYPTED_SECRET = decryptedClientSecret;
                         return completeRegResponse;
                     }
                 }
@@ -449,39 +366,28 @@ class ISW {
             }
         });
     }
-    decryptWithPrivateKey(encryptedData) {
-        const buffer = Buffer.from(encryptedData, "base64");
-        const decrypted = crypto_1.default.privateDecrypt({
-            key: this.privateKey,
-            padding: crypto_1.default.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256", // Specify the hash function for OAEP
-        }, buffer);
-        return decrypted.toString();
+    //COMPLETE REGISTRATION
+    completeClientRegistration(sessionKey, transactionReference, requestReference, serialId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const payload = {
+                terminalId: this.terminalId,
+                password: this.encryptPassword(this.passphrase, sessionKey),
+                transactionReference: transactionReference,
+                requestReference: requestReference,
+                serialId: serialId,
+            };
+            try {
+                const response = yield this.post("/api/v1/phoenix/client/completeClientRegistration", payload);
+                console.log("completeReg1", response);
+                return response; // Return the response
+            }
+            catch (error) {
+                console.error("Error during complete client registration:", error); // Log any error that occurs
+                throw error; // Re-throw the error after logging it
+            }
+        });
     }
-    decPassword(encryptedData) {
-        const buffer = Buffer.from(encryptedData, "base64");
-        const decrypted = crypto_1.default.privateDecrypt({
-            key: this.sessionKey,
-            padding: crypto_1.default.constants.RSA_PKCS1_OAEP_PADDING,
-            oaepHash: "sha256", // Specify the hash function for OAEP
-        }, buffer);
-        return decrypted.toString();
-    }
-    doECDH(serverPublicKeyBase64, ecdhPrivate) {
-        const ec = new elliptic_1.ec("p256");
-        const yourKeyPair = ec.keyFromPrivate(ecdhPrivate, "hex");
-        const serverPublicKeyHex = Buffer.from(serverPublicKeyBase64, "base64").toString("hex");
-        const sessionKey = yourKeyPair.derive(ec.keyFromPublic(serverPublicKeyHex, "hex").getPublic());
-        return sessionKey.toString("hex");
-    }
-    signMessage(message) {
-        console.log("doKeyExchange conct String ==>", message);
-        console.log("newString", message);
-        const sign = crypto_1.default.createSign("SHA256");
-        sign.update(message);
-        const signature = sign.sign({ key: this.privateKey }, "base64");
-        return signature;
-    }
+    //KEY EXCHNAGE
     doKeyExchange() {
         return __awaiter(this, void 0, void 0, function* () {
             const ecdHKeys = this.generateECDHKeyPair();
@@ -491,12 +397,10 @@ class ISW {
             const serialId = this.serialId;
             const pass = this.passphrase;
             console.log("doKeyExchange Raw password==>", pass);
-            const hash = crypto_1.default.createHash("sha512");
-            hash.update(this.passphrase);
-            const hashedPasswordHex = hash.digest("hex");
-            console.log("doKeyExchange 512 hashed password==>", hashedPasswordHex);
-            const base64EncodedHash = Buffer.from(hashedPasswordHex, "hex").toString("base64");
-            // const base64EncodedHash =  hashedPasswordHex;
+            const hash = crypto_1.default.createHash('sha512');
+            hash.update(pass);
+            const base64EncodedHash = hash.digest('base64');
+            console.log("doKeyExchange 512 hashed password==>", base64EncodedHash);
             console.log("doKeyExchange base64EncodedHash password==>", base64EncodedHash);
             const passwordCipher = base64EncodedHash + requestReference + serialId;
             const password = this.signMessage(passwordCipher);
@@ -523,9 +427,8 @@ class ISW {
                     const sessionKey = this.doECDH(decryptedServerSessionPublicKey, privateKey);
                     this.writeToFile("authToken.txt", decryptedAuthToken);
                     this.writeToFile("sessionKey.txt", sessionKey);
-                    //   console.log("decryptedServerSessionPublicKey",sessionKey, decryptedAuthToken,  decryptedServerSessionPublicKey)
                 }
-                console.log(response);
+                console.log("Key Exchange Response", response);
                 return response;
             }
             catch (error) {
@@ -534,34 +437,124 @@ class ISW {
             }
         });
     }
-    completeClientRegistration(sessionKey, transactionReference, requestReference, serialId) {
+    //GET Biller Categories
+    Getcategories() {
         return __awaiter(this, void 0, void 0, function* () {
-            const payload = {
-                terminalId: this.terminalId,
-                password: this.encryptPassword(this.passphrase, sessionKey),
-                transactionReference: transactionReference,
-                requestReference: requestReference,
-                serialId: serialId,
-            };
-            try {
-                const response = yield this.post("/api/v1/phoenix/client/completeClientRegistration", payload);
-                console.log("completeReg1", response);
-                return response; // Return the response
-            }
-            catch (error) {
-                console.error("Error during complete client registration:", error); // Log any error that occurs
-                throw error; // Re-throw the error after logging it
-            }
+            console.log("cat==>", this.terminalId);
+            const url = `/qt-api/Biller/categories-by-client?clientterminalId=${this.terminalId}&terminalId=${this.terminalId}`;
+            const response = yield this.get(url);
+            console.log("response==>", response);
+            return response;
         });
     }
-    writeToFile(filePath, data) {
+    //GET  Category Billers
+    GetCategoryBillers(categoryId) {
         return __awaiter(this, void 0, void 0, function* () {
+            const url = `/qt-api/Biller/biller-by-category/${categoryId}`;
+            const response = yield this.get(url);
+            console.log("response==>", response);
+            return response;
+        });
+    }
+    //GET  Billers Payment Items
+    GetPaymentItems(billerId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = `/qt-api/Biller/items/biller-id/${billerId}`;
+            const response = yield this.get(url);
+            console.log("response==>", response);
+            return response;
+        });
+    }
+    //Check Account Balance
+    accountBalance(requestReference) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = `/api/v1/phoenix/sente/accountBalance?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+            const response = yield this.get(url);
+            console.log("response==>", response);
+            return response;
+        });
+    }
+    //Check Transaction Details/Status
+    transactionInquiry(requestReference) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const url = `/api/v1/phoenix/sente/transaction?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+            const response = yield this.get(url);
+            console.log("response==>", response);
+            return response;
+        });
+    }
+    //Make Validate Customer
+    //RequestReference used here should be the same at /payment. 
+    validateCustomer(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const url = "/api/v1/phoenix/sente/customerValidation";
+                const customerValidationData = {
+                    terminalId: this.terminalId,
+                    requestReference: data.requestReference,
+                    paymentCode: data.paymentCode,
+                    customerId: data.customerId,
+                    currencyCode: data.currencyCode,
+                    amount: data.amount,
+                    alternateCustomerId: data.alternateCustomerId,
+                    customerToken: data.customerToken,
+                    transactionCode: data.transactionCode,
+                    additionalData: data.additionalData,
+                };
+                try {
+                    const response = yield this.post(url, customerValidationData); // Ensure you have a post method implemented
+                    if (response.responseCode === "90000") {
+                        resolve(response);
+                    }
+                    else {
+                        reject(response);
+                    }
+                }
+                catch (error) {
+                    console.error(error);
+                    reject(error);
+                }
+            }));
+        });
+    }
+    //Make Express Payment
+    //For none-express payments , call "/api/v1/phoenix/sente/payment" (requests customer validation)
+    makePayment(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const paymentBody = {
+                terminalId: this.terminalId,
+                requestReference: data.requestReference,
+                amount: data.amount,
+                customerId: data.customerId,
+                phoneNumber: data.phoneNumber,
+                paymentCode: data.paymentCode,
+                customerName: data.customerName,
+                sourceOfFunds: data.sourceOfFunds,
+                narration: data.narration,
+                depositorName: data.depositorName,
+                location: data.location,
+                alternateCustomerId: data.alternateCustomerId,
+                transactionCode: data.transactionCode,
+                customerToken: data.customerToken,
+                additionalData: data.additionalData,
+                collectionsAccountNumber: data.collectionsAccountNumber,
+                pin: data.pin,
+                otp: data.otp,
+                currencyCode: data.currencyCode,
+            };
+            const url = "/api/v1/phoenix/sente/xpayment";
             try {
-                yield writeFile(filePath, data);
-                return `Data successfully written to ${filePath}`;
+                const response = yield this.post(url, paymentBody); // Ensure you have a post method implemented
+                if (response.responseCode === "90000") {
+                    return response;
+                }
+                else {
+                    throw response;
+                }
             }
             catch (error) {
-                throw new Error(`Error writing to file: ${error}`);
+                console.error(error);
+                throw error;
             }
         });
     }

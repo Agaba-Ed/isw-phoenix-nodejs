@@ -23,12 +23,12 @@ class App {
     }
     initializeRoutes() {
         this.app.post("/validateCustomer", this.validateCustomer.bind(this));
-        this.app.post("/categories-by-client", this.getBillerCategories.bind(this));
+        this.app.get("/categories-by-client", this.getBillerCategories.bind(this));
         this.app.get("/getcategoryBillers", this.getCategoryBillers.bind(this));
-        this.app.post("/items", this.getPaymentItems.bind(this));
+        this.app.get("/items", this.getPaymentItems.bind(this));
         this.app.post("/payment", this.payment.bind(this));
-        this.app.post("/transStatus/:terminalId/:requestReference", this.transStatus.bind(this));
-        this.app.post("/accountBalance", this.accountBalance.bind(this));
+        this.app.get("/transStatus/:terminalId/:requestReference", this.transStatus.bind(this));
+        this.app.get("/accountBalance", this.accountBalance.bind(this));
         this.app.get("/keyPair", this.generateRSAKeyPair.bind(this));
         this.app.post("/clientRegistration", this.clientRegistration.bind(this));
         this.app.post("/doKeyExchange", this.doKeyExchange.bind(this));
@@ -38,9 +38,9 @@ class App {
     util(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                var clientSecret = "XexmmksCp8fMwFEaetPq9UyFjF24PHtFs/wGiZBP14LNC5eIoiIOvrMLz5wxIU9SF5kSBu+1KCvxflDwyduOsFcdDABQaVte6qmJW3baL2VaHRPnNIArkPfxqei1phU4iZbvB3qGlI7FqFiXNInimJXssXgzaLl7T7flfcPaofwklf61SMbKSuWSlCqyDPHEKfrPrA/sRcDUrLJ1tN4dj1Kob8X0LcRUSwlGTDwwYMpyZa26GAR6QMEWwWR3cdK8reS8On64scskD+/+fIKn/HCMK/x+VMhfAfrRB14XhhmZfZz9xH10Bz+Q5Bnv4Seh9np6Wi1bRuV8app9m+8ong==";
+                var clientSecret = "zpRc8p/dlBKkizlvenLUh/evRn+2lW1FfCyRGx/SOAUMcxrkyzsNibQgAqv2seuGmObIE1e8IBzpiN+urx9b4mHv7Dm4GSjYNmLfMUfJom2q4ehDg7K6u/2Pm2hAu6yW3iH/UmQwbIElx4W06moXWugWQX0gvxXmv4UwCAwxYZBtTIIv8WQaP9j9PEQPHFmSqFXy2qJwij+ytpp5eHJ69WQs2Q0Vj0F3CkbYd1fvrNRlTCgXqJy1v9dw5lOpyhYL7m76P1v8Xnz9C1CkCPmlQ0XXNa0wt85kbpmg66kTtcOpLNP/qZHjHTJy1I+BpdCEULV203KqjiirSmNlhJiCxQ==";
                 const responseData = this.iswInstance.decryptWithPrivateKey(clientSecret);
-                console.log("certificate", responseData);
+                console.log("Response::", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -63,8 +63,8 @@ class App {
     doKeyExchange(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = this.iswInstance.doKeyExchange();
-                console.log("certificate", responseData);
+                const responseData = yield this.iswInstance.doKeyExchange();
+                console.log("Response:: ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -76,7 +76,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = this.iswInstance.generateRSAKeyPair();
-                console.log("certificate", responseData);
+                console.log("Key Pair ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -88,6 +88,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.accountBalance(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -99,6 +100,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.clientRegistration(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -109,7 +111,8 @@ class App {
     transStatus(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = yield this.iswInstance.transactionInformation(req.body);
+                const responseData = yield this.iswInstance.transactionInquiry(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -121,6 +124,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.validateCustomer(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -132,6 +136,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.Getcategories();
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -143,6 +148,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.Getcategories();
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -154,6 +160,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.GetPaymentItems(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
@@ -165,6 +172,7 @@ class App {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.makePayment(req.body);
+                console.log("Response ", responseData);
                 res.send(responseData);
             }
             catch (error) {
