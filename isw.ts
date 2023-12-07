@@ -26,14 +26,14 @@ class ISW {
 
   constructor() {
 
-    this.apiUrl   = process.env.API_URL || "";
+    this.apiUrl = process.env.API_URL || "";
     this.clientId = process.env.CLIENT_ID || "";
     this.ownerPhoneNumber = process.env.OWNER_PHONE_NUMBER || "";
     this.passphrase = process.env.PASSPHRASE || "";
     this.appVersion = process.env.APP_VERSION || "";
     this.clientSecretKey = process.env.CLIENT_SECRET_KEY || "";
     this.terminalId = process.env.TERMINAL_ID || "";
-    this.serialId   = process.env.serialId || "";
+    this.serialId = process.env.serialId || "";
 
     this.initializeKeys();
   }
@@ -43,10 +43,10 @@ class ISW {
 
     try {
       this.privateKey = await this.readFromFile("private.txt");
-      this.publicKey  = await this.readFromFile("public.txt");
-      this.authToken  = await this.readFromFile("authToken.txt");
-      this.sessionKey = await this.readFromFile("session.txt");
-    } 
+      this.publicKey = await this.readFromFile("public.txt");
+      this.authToken = await this.readFromFile("authToken.txt");
+      this.sessionKey = await this.readFromFile("sessionKey.txt");
+    }
     catch (error) {
       console.error("Error initializing keys:", error);
       // handle error, maybe set some defaults or throw
@@ -57,15 +57,15 @@ class ISW {
 
 
   async writeToFile(filePath: string, data: any) {
-    
+
     try {
       await writeFile(filePath, data);
       return `Data successfully written to ${filePath}`;
-    } 
+    }
     catch (error) {
       throw new Error(`Error writing to file: ${error}`);
     }
-    
+
   }
 
 
@@ -84,8 +84,12 @@ class ISW {
     console.log("URL:", url);
     console.log("Params:", params);
 
+    console.log("newURL:", url);
+    const auth_token = this.getAuthToken(this.authToken, this.sessionKey);
+
     const timestamp = new Date().toISOString();
     console.log("Timestamp:", timestamp);
+    url = `${this.apiUrl}${url}`;
 
     const nonce = crypto.randomBytes(16).toString("hex");
     console.log("Nonce:", nonce);
@@ -105,17 +109,21 @@ class ISW {
     console.log("Signature Header:", signatureHeader);
 
     // Construct headers object step by step
-    const headers: { [key: string]: string } = {};
-    headers["Authorization"] = authorizationHeader;
-    headers["Signature"] = signatureHeader;
-    headers["Content-Type"] = "application/json";
+    const headers = {
+      Authorization: this.generateAuthorizationHeader(this.clientId),
+      Signature: signatureHeader,
+      "Content-Type": "application/json",
+      Nonce: nonce,
+      Timestamp: timestamp,
+      AuthToken: auth_token,
+    };
 
     console.log("Constructed Headers:", headers);
 
     try {
 
       console.log("Sending GET request");
-      const response = await axios.get(`${this.apiUrl}${url}`, {
+      const response = await axios.get(url, {
         params,
         headers,
       });
@@ -130,7 +138,7 @@ class ISW {
     }
   }
 
-  async post(url: string, data = {}) {
+  async post(url: string, data = {}, additionalParameters: any = null) {
 
     console.log("receivedPost", 1);
     const timestamp = new Date().toISOString();
@@ -146,7 +154,8 @@ class ISW {
       timestamp,
       nonce,
       this.clientId,
-      this.clientSecretKey
+      this.clientSecretKey,
+      additionalParameters
     );
 
     console.log("HeaderSignature", signature);
@@ -157,7 +166,7 @@ class ISW {
       "Content-Type": "application/json",
       Nonce: nonce,
       Timestamp: timestamp,
-      authToken: auth_token,
+      AuthToken: auth_token,
     };
 
     console.log("postData", url, JSON.stringify(data), { headers });
@@ -180,11 +189,11 @@ class ISW {
         if (status >= 400 && status < 500) {
           console.error("Client error:", status);
           errorMessage = error.response.data.response;
-        } 
+        }
         else if (status >= 500) {
           console.error("Server error:", status);
           errorMessage = error.response.data.response;
-        } 
+        }
         else {
           errorMessage = "Unexpected error status";
         }
@@ -199,7 +208,7 @@ class ISW {
   }
 
 
-//Genrtae Key Pair
+  //Genrtae Key Pair
   generateRSAKeyPair() {
 
     const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
@@ -236,7 +245,7 @@ class ISW {
     ).toString("base64");
 
     const privateKeyHex = keyPair.getPrivate("hex");
-    
+
     return {
       publicKey: publicKeyBase64,
       privateKey: privateKeyHex,
@@ -269,20 +278,23 @@ class ISW {
 
     let baseString =
       httpMethod +
-      "&" +encodedURI +
-      "&" +timestamp +
-      "&" +nonce +
-      "&" +clientId +
-      "&" +clientSecretKey;
+      "&" + encodedURI +
+      "&" + timestamp +
+      "&" + nonce +
+      "&" + clientId +
+      "&" + clientSecretKey;
+
 
     if (additionalParameters) {
       baseString += "&" + additionalParameters.amount +
         "&" + additionalParameters.terminalId +
         "&" + additionalParameters.requestReference +
         "&" + additionalParameters.customerId +
-        "&" + additionalParameters.paymentcode;
+        "&" + additionalParameters.paymentCode;
     }
 
+    console.log("additionalParameters",additionalParameters )
+    console.log("baseString",baseString )
     try {
 
       return this.signMessage(baseString);
@@ -293,24 +305,14 @@ class ISW {
     }
   }
 
-  //encrypt password using sessionKey
-  encryptPassword(password: string, sessionKey: string): string {
+  encryptAuthToken(authToken: string, sessionKey: string): string {
 
-    const sessionKeyBuffer = Buffer.from(sessionKey, "hex");
-    const hash = crypto.createHash("sha512");
-    hash.update(password,'utf-8');
-
-    const hashedPasswordHex = hash.digest("hex");
-    const base64EncodedHash = Buffer.from(hashedPasswordHex, "hex").toString( "base64" );
-
-    console.log("hashedPasswordHex", hashedPasswordHex);
-    console.log("base64EncodedHash", base64EncodedHash);
     const iv = Buffer.alloc(16, 0);
-
-    const cipher  = crypto.createCipheriv("aes-256-cbc", sessionKeyBuffer, iv);
+    const sessionKeyBuffer = Buffer.from(sessionKey, "hex");
+    const cipher = crypto.createCipheriv("aes-256-cbc", sessionKeyBuffer, iv);
     cipher.setAutoPadding(true);
-    let encrypted = cipher.update(base64EncodedHash, "utf8", "base64");
-    encrypted    += cipher.final("base64");
+    let encrypted = cipher.update(authToken, "utf8", "base64");
+    encrypted += cipher.final("base64");
 
     let combinedBuffer = [];
     combinedBuffer.push(iv);
@@ -321,8 +323,37 @@ class ISW {
 
   }
 
-   //decrypt authToken using sessionKey
+  //encrypt password using sessionKey
+  encryptPassword(password: string, sessionKey: string): string {
+
+    const sessionKeyBuffer = Buffer.from(sessionKey, "hex");
+    const hash = crypto.createHash("sha512");
+    hash.update(password, 'utf-8');
+
+    const hashedPasswordHex = hash.digest("hex");
+    const base64EncodedHash = Buffer.from(hashedPasswordHex, "hex").toString("base64");
+
+    console.log("hashedPasswordHex", hashedPasswordHex);
+    console.log("base64EncodedHash", base64EncodedHash);
+    const iv = Buffer.alloc(16, 0);
+
+    const cipher = crypto.createCipheriv("aes-256-cbc", sessionKeyBuffer, iv);
+    cipher.setAutoPadding(true);
+    let encrypted = cipher.update(base64EncodedHash, "utf8", "base64");
+    encrypted += cipher.final("base64");
+
+    let combinedBuffer = [];
+    combinedBuffer.push(iv);
+    combinedBuffer.push(Buffer.from(encrypted, 'base64'));
+    let finalEncr = Buffer.concat(combinedBuffer);
+
+    return finalEncr.toString('base64');
+
+  }
+
+  //decrypt authToken using sessionKey
   getAuthToken(authToken: any, sessionKey: any) {
+    return this.encryptAuthToken(authToken, sessionKey)
 
     const iv = Buffer.alloc(16, 0);
     const cipher = crypto.createCipheriv(
@@ -337,8 +368,8 @@ class ISW {
     return authTokenEncrypted;
   }
 
- 
-   //decrypt value using privateKey
+
+  //decrypt value using privateKey
   decryptWithPrivateKey(encryptedData: any) {
 
     const buffer = Buffer.from(encryptedData, "base64");
@@ -354,7 +385,7 @@ class ISW {
     return decrypted.toString();
   }
 
-//use  serversessionPublic  to generate ECDH sessionKey
+  //use  serversessionPublic  to generate ECDH sessionKey
   doECDH(serverPublicKeyBase64: any, ecdhPrivate: any) {
 
     const ec = new EC("p256");
@@ -369,18 +400,18 @@ class ISW {
     );
 
     return sessionKey.toString("hex");
-    
+
   }
 
   //Sign data using private key
-  signMessage(message:string) {
+  signMessage(message: string) {
 
     console.log("doKeyExchange conct String ==>", message);
 
     console.log("newString", message);
     const sign = crypto.createSign("rsa-sha256");//Changed from SHA256
     sign.update(message);
-    const  signature = sign.sign(this.privateKey, "base64");
+    const signature = sign.sign(this.privateKey, "base64");
     return signature;
   }
 
@@ -388,7 +419,7 @@ class ISW {
   //INITIATE CLIENT REGISTRATION
 
   async clientRegistration(data: any) {
-    
+
     const serialId = this.serialId;
     const requestReference = data.requestReference;
 
@@ -419,7 +450,7 @@ class ISW {
         "/api/v1/phoenix/client/clientRegistration",
         payload
       );
-      
+
       console.log("response", response);
       const responseCode = response.responseCode;
 
@@ -466,17 +497,17 @@ class ISW {
           const newDecryptedAuthToken = this.decryptWithPrivateKey(newAuthToken);
           const decryptedClientSecret = this.decryptWithPrivateKey(clientSecret);
 
-          console.log('sessionKey',sessionKey);
+          console.log('sessionKey', sessionKey);
 
           this.writeToFile("authToken.txt", newDecryptedAuthToken);
           this.writeToFile("secrete.txt", decryptedClientSecret);
-          this.writeToFile("session.txt", sessionKey);
+          this.writeToFile("sessionKey.txt", sessionKey);
           //return decrypted secret or simply restart app to pickup new one from file
-          completeRegResponse.DECRYPTED_SECRET =decryptedClientSecret;
-
+          completeRegResponse.DECRYPTED_SECRET = decryptedClientSecret;
+          this.initializeKeys();
           return completeRegResponse;
         }
-        
+
       }
 
       console.log(response); // Log the response for debugging
@@ -522,102 +553,103 @@ class ISW {
     }
   }
 
-  
-    //KEY EXCHNAGE
 
-    async doKeyExchange() {
+  //KEY EXCHNAGE
 
-      const ecdHKeys   = this.generateECDHKeyPair();
-      const publicKey  = ecdHKeys.publicKey;
-      const privateKey = ecdHKeys.privateKey;
-  
-      const requestReference = crypto.randomBytes(16).toString("hex");
-      const serialId = this.serialId;
-  
-      const pass = this.passphrase;
-      console.log("doKeyExchange Raw password==>", pass);
-    
-      const hash = crypto.createHash('sha512');
-      hash.update(pass);
-      const base64EncodedHash = hash.digest('base64');
-  
-      console.log("doKeyExchange 512 hashed password==>", base64EncodedHash);
-  
-      console.log(
-        "doKeyExchange base64EncodedHash password==>",
-        base64EncodedHash
+  async doKeyExchange() {
+
+    const ecdHKeys = this.generateECDHKeyPair();
+    const publicKey = ecdHKeys.publicKey;
+    const privateKey = ecdHKeys.privateKey;
+
+    const requestReference = crypto.randomBytes(16).toString("hex");
+    const serialId = this.serialId;
+
+    const pass = this.passphrase;
+    console.log("doKeyExchange Raw password==>", pass);
+
+    const hash = crypto.createHash('sha512');
+    hash.update(pass);
+    const base64EncodedHash = hash.digest('base64');
+
+    console.log("doKeyExchange 512 hashed password==>", base64EncodedHash);
+
+    console.log(
+      "doKeyExchange base64EncodedHash password==>",
+      base64EncodedHash
+    );
+
+    const passwordCipher = base64EncodedHash + requestReference + serialId;
+    const password = this.signMessage(passwordCipher);
+
+    console.log("doKeyExchange COMPLETE password ==>", password);
+
+    const payload = {
+      terminalId: this.terminalId,
+      appVersion: this.appVersion,
+      serialId: this.serialId,
+      requestReference: requestReference,
+      clientSessionPublicKey: publicKey,
+      password: password,
+    };
+
+    console.log("payload", payload);
+
+    try {
+      const response = await this.post(
+        "/api/v1/phoenix/client/doKeyExchange",
+        payload
       );
-      
-      const passwordCipher = base64EncodedHash + requestReference + serialId;
-      const password       = this.signMessage(passwordCipher);
-  
-      console.log("doKeyExchange COMPLETE password ==>", password);
-  
-      const payload = {
-        terminalId: this.terminalId,
-        appVersion: this.appVersion,
-        serialId: this.serialId,
-        requestReference: requestReference,
-        clientSessionPublicKey: publicKey,
-        password: password,
-      };
-  
-      console.log("payload", payload);
-  
-      try {
-        const response = await this.post(
-          "/api/v1/phoenix/client/doKeyExchange",
-          payload
-        );
-  
-        const responseCode = response.responseCode;
-  
-        if (responseCode == "90000") {
-  
-          const data = response.response;
-          const serverSessionPublicKey = data.serverSessionPublicKey;
-          const transactionReference = data.transactionReference;
-          const authToken = data.authToken;
-          const decryptedAuthToken = this.decryptWithPrivateKey(authToken);
-  
-          const decryptedServerSessionPublicKey = this.decryptWithPrivateKey(
-            serverSessionPublicKey
-          );
-  
-          const sessionKey = this.doECDH(
-            decryptedServerSessionPublicKey,
-            privateKey
-          );
-  
-          this.writeToFile("authToken.txt", decryptedAuthToken);
-          this.writeToFile("sessionKey.txt", sessionKey);
-     
-        }
-  
-        console.log("Key Exchange Response",response);
-        return response;
-      } 
-      catch (error) {
-  
-        console.error("Error during key exchange:", error);
-        throw error;
-      }
-    }
-  
-    //GET Biller Categories
-  async Getcategories() {
-    console.log("cat==>", this.terminalId);
 
-    const url = `/qt-api/Biller/categories-by-client?clientterminalId=${this.terminalId}&terminalId=${this.terminalId}`;
+      const responseCode = response.responseCode;
+
+      if (responseCode == "90000") {
+
+        const data = response.response;
+        const serverSessionPublicKey = data.serverSessionPublicKey;
+        const transactionReference = data.transactionReference;
+        const authToken = data.authToken;
+        const decryptedAuthToken = this.decryptWithPrivateKey(authToken);
+
+        const decryptedServerSessionPublicKey = this.decryptWithPrivateKey(
+          serverSessionPublicKey
+        );
+
+        const sessionKey = this.doECDH(
+          decryptedServerSessionPublicKey,
+          privateKey
+        );
+
+        this.writeToFile("authToken.txt", decryptedAuthToken);
+        this.writeToFile("sessionKey.txt", sessionKey);
+
+        this.initializeKeys();
+
+      }
+
+      console.log("Key Exchange Response", response);
+      return response;
+    }
+    catch (error) {
+
+      console.error("Error during key exchange:", error);
+      throw error;
+    }
+  }
+
+  //GET Biller Categories
+  async Getcategories() {
+    console.log("Getcategories==>", this.terminalId);
+    const url = `/gateway/qt-api/Biller/categories-by-client/${this.terminalId}/${this.terminalId}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
   }
 
-  
+
   //GET  Category Billers
   async GetCategoryBillers(categoryId: string) {
-    const url = `/qt-api/Biller/biller-by-category/${categoryId}`;
+    const url = `/gateway/qt-api/Biller/biller-by-category/${categoryId}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
@@ -626,60 +658,60 @@ class ISW {
 
   //GET  Billers Payment Items
   async GetPaymentItems(billerId: string) {
-    const url = `/qt-api/Biller/items/biller-id/${billerId}`;
+    const url = `/gateway/qt-api/Biller/items/biller-id/${billerId}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
   }
 
-//Check Account Balance
+  //Check Account Balance
   async accountBalance(requestReference: string) {
-    const url = `/api/v1/phoenix/sente/accountBalance?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+    const url = `/api/v1/phoenix/sente/accountBalance/${this.terminalId}/${requestReference}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
   }
 
-//Check Transaction Details/Status
+  //Check Transaction Details/Status
   async transactionInquiry(requestReference: string) {
-    const url = `/api/v1/phoenix/sente/transaction?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+    const url = `/api/v1/phoenix/sente/transaction/${this.terminalId}/${requestReference}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
   }
 
-    //Make Validate Customer
-    //RequestReference used here should be the same at /payment. 
+  //Make Validate Customer
+  //RequestReference used here should be the same at /payment. 
 
-    async validateCustomer(data: any) {
-    
-      return new Promise(async (resolve, reject) => {
-        const url = "/api/v1/phoenix/sente/customerValidation";
-        const customerValidationData = {
-          terminalId: this.terminalId,
-          requestReference: data.requestReference,
-          paymentCode: data.paymentCode,
-          customerId: data.customerId,
-          currencyCode: data.currencyCode,
-          amount: data.amount,
-          alternateCustomerId: data.alternateCustomerId,
-          customerToken: data.customerToken,
-          transactionCode: data.transactionCode,
-          additionalData: data.additionalData,
-        };
-        try {
-          const response = await this.post(url, customerValidationData); // Ensure you have a post method implemented
-          if (response.responseCode === "90000") {
-            resolve(response);
-          } else {
-            reject(response);
-          }
-        } catch (error) {
-          console.error(error);
-          reject(error);
+  async validateCustomer(data: any) {
+
+    return new Promise(async (resolve, reject) => {
+      const url = "/api/v1/phoenix/sente/customerValidation";
+      const customerValidationData = {
+        terminalId: this.terminalId,
+        requestReference: data.requestReference,
+        paymentCode: data.paymentCode,
+        customerId: data.customerId,
+        currencyCode: data.currencyCode,
+        amount: data.amount,
+        alternateCustomerId: data.alternateCustomerId,
+        customerToken: data.customerToken,
+        transactionCode: data.transactionCode,
+        additionalData: data.additionalData,
+      };
+      try {
+        const response = await this.post(url, customerValidationData); // Ensure you have a post method implemented
+        if (response.responseCode === "90000") {
+          resolve(response);
+        } else {
+          reject(response);
         }
-      });
-    }
+      } catch (error) {
+        console.error(error);
+        reject(error);
+      }
+    });
+  }
 
 
   //Make Express Payment
@@ -710,7 +742,7 @@ class ISW {
     const url = "/api/v1/phoenix/sente/xpayment";
 
     try {
-      const response = await this.post(url, paymentBody); // Ensure you have a post method implemented
+      const response = await this.post(url, paymentBody, paymentBody); // Ensure you have a post method implemented
       if (response.responseCode === "90000") {
         return response;
       } else {

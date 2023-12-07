@@ -63,7 +63,7 @@ class ISW {
                 this.privateKey = yield this.readFromFile("private.txt");
                 this.publicKey = yield this.readFromFile("public.txt");
                 this.authToken = yield this.readFromFile("authToken.txt");
-                this.sessionKey = yield this.readFromFile("session.txt");
+                this.sessionKey = yield this.readFromFile("sessionKey.txt");
             }
             catch (error) {
                 console.error("Error initializing keys:", error);
@@ -98,8 +98,11 @@ class ISW {
             console.log("Starting get method");
             console.log("URL:", url);
             console.log("Params:", params);
+            console.log("newURL:", url);
+            const auth_token = this.getAuthToken(this.authToken, this.sessionKey);
             const timestamp = new Date().toISOString();
             console.log("Timestamp:", timestamp);
+            url = `${this.apiUrl}${url}`;
             const nonce = crypto_1.default.randomBytes(16).toString("hex");
             console.log("Nonce:", nonce);
             const authorizationHeader = this.generateAuthorizationHeader(this.clientId);
@@ -107,14 +110,18 @@ class ISW {
             const signatureHeader = this.generateSignatureHeader("GET", url, timestamp, nonce, this.clientId, this.clientSecretKey);
             console.log("Signature Header:", signatureHeader);
             // Construct headers object step by step
-            const headers = {};
-            headers["Authorization"] = authorizationHeader;
-            headers["Signature"] = signatureHeader;
-            headers["Content-Type"] = "application/json";
+            const headers = {
+                Authorization: this.generateAuthorizationHeader(this.clientId),
+                Signature: signatureHeader,
+                "Content-Type": "application/json",
+                Nonce: nonce,
+                Timestamp: timestamp,
+                AuthToken: auth_token,
+            };
             console.log("Constructed Headers:", headers);
             try {
                 console.log("Sending GET request");
-                const response = yield axios_1.default.get(`${this.apiUrl}${url}`, {
+                const response = yield axios_1.default.get(url, {
                     params,
                     headers,
                 });
@@ -129,7 +136,7 @@ class ISW {
             }
         });
     }
-    post(url, data = {}) {
+    post(url, data = {}, additionalParameters = null) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log("receivedPost", 1);
             const timestamp = new Date().toISOString();
@@ -137,7 +144,7 @@ class ISW {
             url = `${this.apiUrl}${url}`;
             console.log("receivedPost", 2);
             const auth_token = this.getAuthToken(this.authToken, this.sessionKey);
-            const signature = this.generateSignatureHeader("POST", url, timestamp, nonce, this.clientId, this.clientSecretKey);
+            const signature = this.generateSignatureHeader("POST", url, timestamp, nonce, this.clientId, this.clientSecretKey, additionalParameters);
             console.log("HeaderSignature", signature);
             const headers = {
                 Authorization: this.generateAuthorizationHeader(this.clientId),
@@ -145,7 +152,7 @@ class ISW {
                 "Content-Type": "application/json",
                 Nonce: nonce,
                 Timestamp: timestamp,
-                authToken: auth_token,
+                AuthToken: auth_token,
             };
             console.log("postData", url, JSON.stringify(data), { headers });
             try {
@@ -234,8 +241,10 @@ class ISW {
                 "&" + additionalParameters.terminalId +
                 "&" + additionalParameters.requestReference +
                 "&" + additionalParameters.customerId +
-                "&" + additionalParameters.paymentcode;
+                "&" + additionalParameters.paymentCode;
         }
+        console.log("additionalParameters", additionalParameters);
+        console.log("baseString", baseString);
         try {
             return this.signMessage(baseString);
         }
@@ -243,6 +252,19 @@ class ISW {
             console.log("An error occurred while creating the signature:", error);
             return "";
         }
+    }
+    encryptAuthToken(authToken, sessionKey) {
+        const iv = Buffer.alloc(16, 0);
+        const sessionKeyBuffer = Buffer.from(sessionKey, "hex");
+        const cipher = crypto_1.default.createCipheriv("aes-256-cbc", sessionKeyBuffer, iv);
+        cipher.setAutoPadding(true);
+        let encrypted = cipher.update(authToken, "utf8", "base64");
+        encrypted += cipher.final("base64");
+        let combinedBuffer = [];
+        combinedBuffer.push(iv);
+        combinedBuffer.push(Buffer.from(encrypted, 'base64'));
+        let finalEncr = Buffer.concat(combinedBuffer);
+        return finalEncr.toString('base64');
     }
     //encrypt password using sessionKey
     encryptPassword(password, sessionKey) {
@@ -266,6 +288,7 @@ class ISW {
     }
     //decrypt authToken using sessionKey
     getAuthToken(authToken, sessionKey) {
+        return this.encryptAuthToken(authToken, sessionKey);
         const iv = Buffer.alloc(16, 0);
         const cipher = crypto_1.default.createCipheriv("aes-256-cbc", Buffer.from(sessionKey, "hex"), iv);
         let encrypted = cipher.update(authToken, "utf8", "hex");
@@ -351,9 +374,10 @@ class ISW {
                         console.log('sessionKey', sessionKey);
                         this.writeToFile("authToken.txt", newDecryptedAuthToken);
                         this.writeToFile("secrete.txt", decryptedClientSecret);
-                        this.writeToFile("session.txt", sessionKey);
+                        this.writeToFile("sessionKey.txt", sessionKey);
                         //return decrypted secret or simply restart app to pickup new one from file
                         completeRegResponse.DECRYPTED_SECRET = decryptedClientSecret;
+                        this.initializeKeys();
                         return completeRegResponse;
                     }
                 }
@@ -427,6 +451,7 @@ class ISW {
                     const sessionKey = this.doECDH(decryptedServerSessionPublicKey, privateKey);
                     this.writeToFile("authToken.txt", decryptedAuthToken);
                     this.writeToFile("sessionKey.txt", sessionKey);
+                    this.initializeKeys();
                 }
                 console.log("Key Exchange Response", response);
                 return response;
@@ -440,8 +465,8 @@ class ISW {
     //GET Biller Categories
     Getcategories() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log("cat==>", this.terminalId);
-            const url = `/qt-api/Biller/categories-by-client?clientterminalId=${this.terminalId}&terminalId=${this.terminalId}`;
+            console.log("Getcategories==>", this.terminalId);
+            const url = `/gateway/qt-api/Biller/categories-by-client/${this.terminalId}/${this.terminalId}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;
@@ -450,7 +475,7 @@ class ISW {
     //GET  Category Billers
     GetCategoryBillers(categoryId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = `/qt-api/Biller/biller-by-category/${categoryId}`;
+            const url = `/gateway/qt-api/Biller/biller-by-category/${categoryId}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;
@@ -459,7 +484,7 @@ class ISW {
     //GET  Billers Payment Items
     GetPaymentItems(billerId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = `/qt-api/Biller/items/biller-id/${billerId}`;
+            const url = `/gateway/qt-api/Biller/items/biller-id/${billerId}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;
@@ -468,7 +493,7 @@ class ISW {
     //Check Account Balance
     accountBalance(requestReference) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = `/api/v1/phoenix/sente/accountBalance?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+            const url = `/api/v1/phoenix/sente/accountBalance/${this.terminalId}/${requestReference}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;
@@ -477,7 +502,7 @@ class ISW {
     //Check Transaction Details/Status
     transactionInquiry(requestReference) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = `/api/v1/phoenix/sente/transaction?terminalId=${this.terminalId}&requestReference=${requestReference}`;
+            const url = `/api/v1/phoenix/sente/transaction/${this.terminalId}/${requestReference}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;
@@ -544,7 +569,7 @@ class ISW {
             };
             const url = "/api/v1/phoenix/sente/xpayment";
             try {
-                const response = yield this.post(url, paymentBody); // Ensure you have a post method implemented
+                const response = yield this.post(url, paymentBody, paymentBody); // Ensure you have a post method implemented
                 if (response.responseCode === "90000") {
                     return response;
                 }

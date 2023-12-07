@@ -11,11 +11,12 @@ class App {
     this.iswInstance = new ISW();
     this.initializeRoutes();
   }
+  //airtel 
 
   private initializeRoutes(): void {
     this.app.post("/validateCustomer", this.validateCustomer.bind(this));
-    this.app.get("/categories-by-client", this.getBillerCategories.bind(this));
-    this.app.get("/getcategoryBillers", this.getCategoryBillers.bind(this));
+    this.app.get("/getbillerbycategory/:id", this.getBillerCategories.bind(this));
+    this.app.get("/getcategories", this.Getcategories.bind(this));
     this.app.get("/items", this.getPaymentItems.bind(this));
     this.app.post("/payment", this.payment.bind(this));
     this.app.get(
@@ -118,7 +119,8 @@ class App {
 
   async getBillerCategories(req: Request, res: Response) {
     try {
-      const responseData = await this.iswInstance.Getcategories();
+      const catId = req.params.id
+      const responseData = await this.iswInstance.GetCategoryBillers(catId);
       console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
@@ -126,7 +128,7 @@ class App {
     }
   }
 
-  async getCategoryBillers(req: Request, res: Response) {
+  async Getcategories(req: Request, res: Response) {
     try {
       const responseData = await this.iswInstance.Getcategories();
       console.log("Response ", responseData);

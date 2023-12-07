@@ -23,8 +23,8 @@ class App {
     }
     initializeRoutes() {
         this.app.post("/validateCustomer", this.validateCustomer.bind(this));
-        this.app.get("/categories-by-client", this.getBillerCategories.bind(this));
-        this.app.get("/getcategoryBillers", this.getCategoryBillers.bind(this));
+        this.app.get("/getbillerbycategory/:id", this.getBillerCategories.bind(this));
+        this.app.get("/getcategories", this.Getcategories.bind(this));
         this.app.get("/items", this.getPaymentItems.bind(this));
         this.app.post("/payment", this.payment.bind(this));
         this.app.get("/transStatus/:terminalId/:requestReference", this.transStatus.bind(this));
@@ -135,7 +135,8 @@ class App {
     getBillerCategories(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = yield this.iswInstance.Getcategories();
+                const catId = req.params.id;
+                const responseData = yield this.iswInstance.GetCategoryBillers(catId);
                 console.log("Response ", responseData);
                 res.send(responseData);
             }
@@ -144,7 +145,7 @@ class App {
             }
         });
     }
-    getCategoryBillers(req, res) {
+    Getcategories(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const responseData = yield this.iswInstance.Getcategories();
