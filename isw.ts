@@ -57,7 +57,7 @@ class ISW {
 
 
   async writeToFile(filePath: string, data: any) {
-    filePath = `isw/${filePath}`
+    filePath = `./isw/${filePath}`
     try {
       await writeFile(filePath, data);
       return `Data successfully written to ${filePath}`;
@@ -71,7 +71,7 @@ class ISW {
 
   async readFromFile(filePath: string): Promise<string> {
     try {
-      filePath = `isw/${filePath}`
+      filePath = `./isw/${filePath}`
       const data = await fss.readFile(filePath, { encoding: "utf8" });
       return data;
     } catch (error) {

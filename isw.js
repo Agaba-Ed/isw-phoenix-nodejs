@@ -73,6 +73,7 @@ class ISW {
     }
     writeToFile(filePath, data) {
         return __awaiter(this, void 0, void 0, function* () {
+            filePath = `./isw/${filePath}`;
             try {
                 yield writeFile(filePath, data);
                 return `Data successfully written to ${filePath}`;
@@ -85,6 +86,7 @@ class ISW {
     readFromFile(filePath) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                filePath = `./isw/${filePath}`;
                 const data = yield fss.readFile(filePath, { encoding: "utf8" });
                 return data;
             }
