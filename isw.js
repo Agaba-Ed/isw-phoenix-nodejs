@@ -500,9 +500,9 @@ class ISW {
         });
     }
     //Check Transaction Details/Status
-    transactionInquiry(requestReference) {
+    transactionInquiry(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const url = `/api/v1/phoenix/sente/transaction/${this.terminalId}/${requestReference}`;
+            const url = `/api/v1/phoenix/sente/status?terminalId=${this.terminalId}&requestReference=${id}`;
             const response = yield this.get(url);
             console.log("response==>", response);
             return response;

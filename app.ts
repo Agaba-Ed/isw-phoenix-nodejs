@@ -19,9 +19,7 @@ class App {
     this.app.get("/getcategories", this.Getcategories.bind(this));
     this.app.get("/items", this.getPaymentItems.bind(this));
     this.app.post("/payment", this.payment.bind(this));
-    this.app.get(
-      "/transStatus/:terminalId/:requestReference",
-      this.transStatus.bind(this)
+    this.app.get("/transStatus/:id",this.transStatus.bind(this)
     );
     this.app.get("/accountBalance", this.accountBalance.bind(this));
     this.app.get("/keyPair", this.generateRSAKeyPair.bind(this));
@@ -97,9 +95,8 @@ class App {
 
   async transStatus(req: Request, res: Response) {
     try {
-      const responseData = await this.iswInstance.transactionInquiry(
-        req.body
-      );
+      const txId =  req.params.id
+      const responseData = await this.iswInstance.transactionInquiry(txId);
       console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {

@@ -21,13 +21,14 @@ class App {
         this.iswInstance = new isw_1.default();
         this.initializeRoutes();
     }
+    //airtel 
     initializeRoutes() {
         this.app.post("/validateCustomer", this.validateCustomer.bind(this));
         this.app.get("/getbillerbycategory/:id", this.getBillerCategories.bind(this));
         this.app.get("/getcategories", this.Getcategories.bind(this));
         this.app.get("/items", this.getPaymentItems.bind(this));
         this.app.post("/payment", this.payment.bind(this));
-        this.app.get("/transStatus/:terminalId/:requestReference", this.transStatus.bind(this));
+        this.app.get("/transStatus/:id", this.transStatus.bind(this));
         this.app.get("/accountBalance", this.accountBalance.bind(this));
         this.app.get("/keyPair", this.generateRSAKeyPair.bind(this));
         this.app.post("/clientRegistration", this.clientRegistration.bind(this));
@@ -111,7 +112,8 @@ class App {
     transStatus(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = yield this.iswInstance.transactionInquiry(req.body);
+                const txId = req.params.id;
+                const responseData = yield this.iswInstance.transactionInquiry(txId);
                 console.log("Response ", responseData);
                 res.send(responseData);
             }

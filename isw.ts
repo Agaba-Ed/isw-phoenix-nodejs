@@ -57,7 +57,7 @@ class ISW {
 
 
   async writeToFile(filePath: string, data: any) {
-
+    filePath = `isw/${filePath}`
     try {
       await writeFile(filePath, data);
       return `Data successfully written to ${filePath}`;
@@ -71,6 +71,7 @@ class ISW {
 
   async readFromFile(filePath: string): Promise<string> {
     try {
+      filePath = `isw/${filePath}`
       const data = await fss.readFile(filePath, { encoding: "utf8" });
       return data;
     } catch (error) {
@@ -673,8 +674,8 @@ class ISW {
   }
 
   //Check Transaction Details/Status
-  async transactionInquiry(requestReference: string) {
-    const url = `/api/v1/phoenix/sente/transaction/${this.terminalId}/${requestReference}`;
+  async transactionInquiry(id: string) {
+    const url = `/api/v1/phoenix/sente/status?terminalId=${this.terminalId}&requestReference=${id}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
