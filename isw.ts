@@ -43,8 +43,8 @@ class ISW {
 
     try {
       this.privateKey = await this.readFromFile("private.txt");
-      this.publicKey = await this.readFromFile("public.txt");
-      this.authToken = await this.readFromFile("authToken.txt");
+      this.publicKey  = await this.readFromFile("public.txt");
+      this.authToken  = await this.readFromFile("authToken.txt");
       this.sessionKey = await this.readFromFile("sessionKey.txt");
     }
     catch (error) {
