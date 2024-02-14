@@ -310,11 +310,27 @@ class ISW {
     }
     //use  serversessionPublic  to generate ECDH sessionKey
     doECDH(serverPublicKeyBase64, ecdhPrivate) {
+        // const ec = new EC("p256");
+        // const yourKeyPair = ec.keyFromPrivate(ecdhPrivate, "hex");
+        // const serverPublicKeyHex = Buffer.from(
+        //   serverPublicKeyBase64,
+        //   "base64"
+        // ).toString("hex");
+        // const sessionKey = yourKeyPair.derive(
+        //   ec.keyFromPublic(serverPublicKeyHex, "hex").getPublic()
+        // );
+        // return sessionKey.toString("hex");
         const ec = new elliptic_1.ec("p256");
         const yourKeyPair = ec.keyFromPrivate(ecdhPrivate, "hex");
         const serverPublicKeyHex = Buffer.from(serverPublicKeyBase64, "base64").toString("hex");
         const sessionKey = yourKeyPair.derive(ec.keyFromPublic(serverPublicKeyHex, "hex").getPublic());
-        return sessionKey.toString("hex");
+        // Convert the sessionKey to a hex string
+        let sessionKeyHex = sessionKey.toString(16); // 16 for hexadecimal
+        // Pad the sessionKeyHex if it's less than 64 characters
+        if (sessionKeyHex.length < 64) {
+            sessionKeyHex = sessionKeyHex.padStart(64, '0');
+        }
+        return sessionKeyHex;
     }
     //Sign data using private key
     signMessage(message) {
