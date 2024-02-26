@@ -553,8 +553,9 @@ class ISW {
         });
     }
     //Check Account Balance
-    accountBalance(requestReference) {
+    accountBalance() {
         return __awaiter(this, void 0, void 0, function* () {
+            const requestReference = crypto_1.default.randomBytes(16).toString("hex");
             const url = `/api/v1/phoenix/sente/accountBalance/${this.terminalId}/${requestReference}`;
             const response = yield this.get(url);
             console.log("response==>", response);

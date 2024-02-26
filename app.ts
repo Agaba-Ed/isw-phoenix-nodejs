@@ -17,10 +17,9 @@ class App {
     this.app.post("/validateCustomer", this.validateCustomer.bind(this));
     this.app.get("/getbillerbycategory/:id", this.getBillerCategories.bind(this));
     this.app.get("/getcategories", this.Getcategories.bind(this));
-    this.app.get("/items", this.getPaymentItems.bind(this));
+    this.app.get("/billeritems/:id", this.getPaymentItems.bind(this));
     this.app.post("/payment", this.payment.bind(this));
-    this.app.get("/transStatus/:id",this.transStatus.bind(this)
-    );
+    this.app.get("/transStatus/:id",this.transStatus.bind(this));
     this.app.get("/accountBalance", this.accountBalance.bind(this));
     this.app.get("/keyPair", this.generateRSAKeyPair.bind(this));
     this.app.post("/clientRegistration", this.clientRegistration.bind(this));
@@ -75,7 +74,8 @@ class App {
 
   async accountBalance(req: Request, res: Response) {
     try {
-      const responseData = await this.iswInstance.accountBalance(req.body);
+    
+      const responseData = await this.iswInstance.accountBalance();
       console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {
@@ -137,7 +137,8 @@ class App {
 
   async getPaymentItems(req: Request, res: Response) {
     try {
-      const responseData = await this.iswInstance.GetPaymentItems(req.body);
+      const billerId = req.params.id
+      const responseData = await this.iswInstance.GetPaymentItems(billerId);
       console.log("Response ", responseData);
       res.send(responseData);
     } catch (error) {

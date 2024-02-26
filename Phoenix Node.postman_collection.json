@@ -1,0 +1,280 @@
+{
+	"info": {
+		"_postman_id": "c4ea2cbb-1653-40a2-8271-ae5edc8fb6bd",
+		"name": "Phoenix Node",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "4288093"
+	},
+	"item": [
+		{
+			"name": "Register & Complete Registration",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"requestReference\":\"0998478487900\",\r\n    \"phoneNumber\":\"0789098767\",\r\n    \"nin\":\"CMN763637637600083\",\r\n    \"name\":\"Click One\",\r\n    \"ownerPhoneNumber\":\"07890987670\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/clientRegistration",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"clientRegistration"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Trigger Key Exchange",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"requestReference\":\"0998478487400\",\r\n    \"phoneNumber\":\"0789098767\",\r\n    \"nin\":\"CMN763637637600083\",\r\n    \"name\":\"Click One\",\r\n    \"ownerPhoneNumber\":\"07890987670\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/doKeyExchange",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"doKeyExchange"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Biller Categories",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"requestReference\":\"0998478487400\",\r\n    \"phoneNumber\":\"0789098767\",\r\n    \"nin\":\"CMN763637637600083\",\r\n    \"name\":\"Click One\",\r\n    \"ownerPhoneNumber\":\"07890987670\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/getcategories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"getcategories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Billers",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"requestReference\":\"0998478487400\",\r\n    \"phoneNumber\":\"0789098767\",\r\n    \"nin\":\"CMN763637637600083\",\r\n    \"name\":\"Click One\",\r\n    \"ownerPhoneNumber\":\"07890987670\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/getbillerbycategory/110063",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"getbillerbycategory",
+						"110063"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Billers Items",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"requestReference\":\"0998478487400\",\r\n    \"phoneNumber\":\"0789098767\",\r\n    \"nin\":\"CMN763637637600083\",\r\n    \"name\":\"Click One\",\r\n    \"ownerPhoneNumber\":\"07890987670\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/billeritems/120634",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"billeritems",
+						"120634"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Customer Validation",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n  \"requestReference\":\"038938738738\",\r\n  \"amount\": 100.00,\r\n  \"customerId\": \"12345\",\r\n  \"phoneNumber\": \"987-654-3210\",\r\n  \"paymentCode\": 56789,\r\n  \"customerName\": \"Alice Smith\",\r\n  \"sourceOfFunds\": \"Bank Account\",\r\n  \"narration\": \"Payment for order\",\r\n  \"depositorName\": \"Bob Johnson\",\r\n  \"location\": \"City XYZ\",\r\n  \"alternateCustomerId\": \"54321\",\r\n  \"transactionCode\": \"T12345\",\r\n  \"customerToken\": \"token_value\",\r\n  \"additionalData\": \"Additional data here\",\r\n  \"collectionsAccountNumber\": \"78901234\",\r\n  \"pin\": null,\r\n  \"otp\": null,\r\n  \"currencyCode\": \"USD\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/validateCustomer",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"validateCustomer"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Notify Payment",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{ \r\n  \"requestReference\":\"038938738738\",\r\n  \"amount\": 100.00,\r\n  \"customerId\": \"12345\",\r\n  \"phoneNumber\": \"987-654-3210\",\r\n  \"paymentCode\": 56789,\r\n  \"customerName\": \"Alice Smith\",\r\n  \"sourceOfFunds\": \"Bank Account\",\r\n  \"narration\": \"Payment for order\",\r\n  \"depositorName\": \"Bob Johnson\",\r\n  \"location\": \"City XYZ\",\r\n  \"alternateCustomerId\": \"54321\",\r\n  \"transactionCode\": \"T12345\",\r\n  \"customerToken\": \"token_value\",\r\n  \"additionalData\": \"Additional data here\",\r\n  \"collectionsAccountNumber\": \"78901234\",\r\n  \"pin\": null,\r\n  \"otp\": null,\r\n  \"currencyCode\": \"USD\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/payment",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Fetch Wallet Balance",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/accountBalance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"accountBalance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check Status",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/transStatus/6646546546546",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"transStatus",
+						"6646546546546"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

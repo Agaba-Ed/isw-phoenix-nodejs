@@ -26,7 +26,7 @@ class App {
         this.app.post("/validateCustomer", this.validateCustomer.bind(this));
         this.app.get("/getbillerbycategory/:id", this.getBillerCategories.bind(this));
         this.app.get("/getcategories", this.Getcategories.bind(this));
-        this.app.get("/items", this.getPaymentItems.bind(this));
+        this.app.get("/billeritems/:id", this.getPaymentItems.bind(this));
         this.app.post("/payment", this.payment.bind(this));
         this.app.get("/transStatus/:id", this.transStatus.bind(this));
         this.app.get("/accountBalance", this.accountBalance.bind(this));
@@ -88,7 +88,7 @@ class App {
     accountBalance(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = yield this.iswInstance.accountBalance(req.body);
+                const responseData = yield this.iswInstance.accountBalance();
                 console.log("Response ", responseData);
                 res.send(responseData);
             }
@@ -162,7 +162,8 @@ class App {
     getPaymentItems(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const responseData = yield this.iswInstance.GetPaymentItems(req.body);
+                const billerId = req.params.id;
+                const responseData = yield this.iswInstance.GetPaymentItems(billerId);
                 console.log("Response ", responseData);
                 res.send(responseData);
             }
