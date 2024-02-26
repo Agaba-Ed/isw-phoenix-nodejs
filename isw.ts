@@ -12,6 +12,7 @@ import * as fss from "fs/promises";
 class ISW {
 
   apiUrl: string;
+  billersApiUrl:string;
   clientId: string;
   ownerPhoneNumber: string;
   passphrase: string;
@@ -34,6 +35,7 @@ class ISW {
     this.clientSecretKey = process.env.CLIENT_SECRET_KEY || "";
     this.terminalId = process.env.TERMINAL_ID || "";
     this.serialId = process.env.serialId || "";
+    this.billersApiUrl = process.env.BILLERS_API_URL || "";
 
     this.initializeKeys();
   }
@@ -91,6 +93,66 @@ class ISW {
     const timestamp = new Date().toISOString();
     console.log("Timestamp:", timestamp);
     url = `${this.apiUrl}${url}`;
+
+    const nonce = crypto.randomBytes(16).toString("hex");
+    console.log("Nonce:", nonce);
+
+    const authorizationHeader = this.generateAuthorizationHeader(this.clientId);
+    console.log("Authorization Header:", authorizationHeader);
+
+    const signatureHeader = this.generateSignatureHeader(
+      "GET",
+      url,
+      timestamp,
+      nonce,
+      this.clientId,
+      this.clientSecretKey
+    );
+
+    console.log("Signature Header:", signatureHeader);
+
+    // Construct headers object step by step
+    const headers = {
+      Authorization: this.generateAuthorizationHeader(this.clientId),
+      Signature: signatureHeader,
+      "Content-Type": "application/json",
+      Nonce: nonce,
+      Timestamp: timestamp,
+      AuthToken: auth_token,
+    };
+
+    console.log("Constructed Headers:", headers);
+
+    try {
+
+      console.log("Sending GET request");
+      const response = await axios.get(url, {
+        params,
+        headers,
+      });
+      console.log("Received response:", response);
+      const rsp = response.data;
+      console.log("Response data:", rsp);
+      return rsp;
+
+    } catch (error) {
+      console.error("Error in GET request:", error);
+      throw error;
+    }
+  }
+
+  async getV2(url: any, params = {}) {
+
+    console.log("Starting get method");
+    console.log("URL:", url);
+    console.log("Params:", params);
+
+    console.log("newURL:", url);
+    const auth_token = this.getAuthToken(this.authToken, this.sessionKey);
+
+    const timestamp = new Date().toISOString();
+    console.log("Timestamp:", timestamp);
+    url = `${this.billersApiUrl}${url}`;
 
     const nonce = crypto.randomBytes(16).toString("hex");
     console.log("Nonce:", nonce);
@@ -661,8 +723,8 @@ class ISW {
   //GET Biller Categories
   async Getcategories() {
     console.log("Getcategories==>", this.terminalId);
-    const url = `/gateway/qt-api/Biller/categories-by-client/${this.terminalId}/${this.terminalId}`;
-    const response = await this.get(url);
+    const url = `qt-api/Biller/categories-by-client/${this.terminalId}/${this.terminalId}`;
+    const response = await this.getV2(url);
     console.log("response==>", response);
     return response;
   }
@@ -670,8 +732,8 @@ class ISW {
 
   //GET  Category Billers
   async GetCategoryBillers(categoryId: string) {
-    const url = `/gateway/qt-api/Biller/biller-by-category/${categoryId}`;
-    const response = await this.get(url);
+    const url = `qt-api/Biller/biller-by-category/${categoryId}`;
+    const response = await this.getV2(url);
     console.log("response==>", response);
     return response;
   }
@@ -679,8 +741,8 @@ class ISW {
 
   //GET  Billers Payment Items
   async GetPaymentItems(billerId: string) {
-    const url = `/gateway/qt-api/Biller/items/biller-id/${billerId}`;
-    const response = await this.get(url);
+    const url = `qt-api/Biller/items/biller-id/${billerId}`;
+    const response = await this.getV2(url);
     console.log("response==>", response);
     return response;
   }
