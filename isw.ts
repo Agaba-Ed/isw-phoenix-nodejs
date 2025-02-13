@@ -750,7 +750,7 @@ class ISW {
   //Check Account Balance
   async accountBalance() {
     const requestReference = crypto.randomBytes(16).toString("hex");
-    const url = `/api/v1/phoenix/sente/accountBalance/${this.terminalId}/${requestReference}`;
+    const url = `/api/v1/phoenix/sente/accountBalance?terminalId=${this.terminalId}&requestReference=${requestReference}`;
     const response = await this.get(url);
     console.log("response==>", response);
     return response;
